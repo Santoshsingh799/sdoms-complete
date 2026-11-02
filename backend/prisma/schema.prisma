@@ -1,0 +1,281 @@
+generator client {
+  provider    = "prisma-client-js"
+  engineType  = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  MENTOR
+  GUARD
+  ADMIN
+}
+
+enum RequestStatus {
+  PENDING_GUARDIAN
+  GUARDIAN_REJECTED
+  PENDING_MENTOR
+  MENTOR_REJECTED
+  APPROVED
+  EXITED
+  RETURNED
+  EXPIRED
+  CANCELLED
+}
+
+enum ApprovalDecision {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+  SIMULATED
+}
+enum ScanResult {
+  VALID
+  INVALID
+  EXPIRED
+  ALREADY_USED
+  CANCELLED
+}
+enum MovementType {
+  EXIT
+  RETURN
+}
+
+model User {
+  id           String   @id @default(uuid())
+  loginId      String   @unique // enrollment no. for students, employee id for others
+  passwordHash String
+  name         String
+  email        String?  @unique
+  mobile       String?
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student   Student?
+  mentor    Mentor?
+  auditLogs AuditLog[]
+  scans     QrVerification[]
+  movements ExitReturnLog[]
+  pushSubscriptions WebPushSubscription[]
+
+  @@index([role])
+}
+
+model Student {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  enrollmentNo String   @unique
+  course       String
+  branch       String
+  semester     Int
+  mobile       String
+  mentorId     String?
+  createdAt    DateTime @default(now())
+
+  user      User              @relation(fields: [userId], references: [id])
+  mentor    Mentor?           @relation(fields: [mentorId], references: [id])
+  guardians StudentGuardian[]
+  requests  OutpassRequest[]
+
+  @@index([mentorId])
+}
+
+model Mentor {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  department String
+  createdAt  DateTime @default(now())
+
+  user      User             @relation(fields: [userId], references: [id])
+  students  Student[]
+  approvals MentorApproval[]
+}
+
+model Guardian {
+  id        String   @id @default(uuid())
+  name      String
+  mobile    String   @unique
+  createdAt DateTime @default(now())
+
+  students  StudentGuardian[]
+  approvals GuardianApproval[]
+}
+
+// Student-guardian link. Only admin-verified links may approve requests.
+model StudentGuardian {
+  id         String    @id @default(uuid())
+  studentId  String
+  guardianId String
+  relation   String // Father, Mother, Brother, Sister, Other
+  isVerified Boolean   @default(false)
+  verifiedBy String?
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  guardian Guardian @relation(fields: [guardianId], references: [id])
+
+  @@unique([studentId, guardianId])
+  @@index([studentId])
+}
+
+model OutpassRequest {
+  id              String        @id @default(uuid())
+  studentId       String
+  destination     String
+  reason          String
+  leaveTime       DateTime
+  returnTime      DateTime
+  emergencyMobile String
+  status          RequestStatus @default(PENDING_GUARDIAN)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  student           Student            @relation(fields: [studentId], references: [id])
+  guardianApprovals GuardianApproval[]
+  mentorApproval    MentorApproval?
+  digitalOutpass    DigitalOutpass?
+  notifications     Notification[]
+
+  @@index([studentId])
+  @@index([status])
+}
+
+model GuardianApproval {
+  id         String           @id @default(uuid())
+  requestId  String
+  guardianId String
+  tokenHash  String           @unique // SHA-256 of link token; raw token exists only in the SMS
+  decision   ApprovalDecision @default(PENDING)
+  expiresAt  DateTime
+  decidedAt  DateTime?
+  decidedIp  String?
+  createdAt  DateTime         @default(now())
+
+  request  OutpassRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  guardian Guardian       @relation(fields: [guardianId], references: [id])
+
+  @@unique([requestId, guardianId])
+  @@index([requestId])
+}
+
+model MentorApproval {
+  id        String           @id @default(uuid())
+  requestId String           @unique
+  mentorId  String
+  decision  ApprovalDecision @default(PENDING)
+  remark    String?
+  decidedAt DateTime?
+  createdAt DateTime         @default(now())
+
+  request OutpassRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  mentor  Mentor         @relation(fields: [mentorId], references: [id])
+}
+
+model DigitalOutpass {
+  id          String   @id @default(uuid())
+  requestId   String   @unique
+  passNumber  String   @unique // e.g. OP-2026-000123
+  verifyId    String   @unique // random public id embedded in QR (no personal data)
+  signature   String // HMAC(verifyId + requestId)
+  validFrom   DateTime
+  validUntil  DateTime
+  isCancelled Boolean  @default(false)
+  issuedAt    DateTime @default(now())
+
+  request OutpassRequest   @relation(fields: [requestId], references: [id])
+  scans   QrVerification[]
+  logs    ExitReturnLog[]
+}
+
+model QrVerification {
+  id          String     @id @default(uuid())
+  outpassId   String?
+  guardUserId String?
+  result      ScanResult
+  scannedAt   DateTime   @default(now())
+
+  outpass DigitalOutpass? @relation(fields: [outpassId], references: [id])
+  guard   User?           @relation(fields: [guardUserId], references: [id])
+
+  @@index([outpassId])
+}
+
+model ExitReturnLog {
+  id          String       @id @default(uuid())
+  outpassId   String
+  guardUserId String
+  type        MovementType
+  loggedAt    DateTime     @default(now())
+
+  outpass DigitalOutpass @relation(fields: [outpassId], references: [id])
+  guard   User           @relation(fields: [guardUserId], references: [id])
+
+  @@unique([outpassId, type]) // DB-level block on duplicate exit / return
+}
+
+model Notification {
+  id        String             @id @default(uuid())
+  requestId String?
+  toMobile  String?
+  toEmail   String?
+  event     String
+  message   String
+  status    NotificationStatus @default(QUEUED)
+  provider  String?
+  createdAt DateTime           @default(now())
+
+  request OutpassRequest? @relation(fields: [requestId], references: [id])
+
+  @@index([requestId])
+}
+
+model WebPushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  meta      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([entity, entityId])
+}
+
+model CollegeSettings {
+  id          Int      @id @default(1)
+  name        String
+  logoUrl     String?
+  sealUrl     String?
+  smsProvider String   @default("dev")
+  updatedAt   DateTime @updatedAt
+}
