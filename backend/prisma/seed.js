@@ -14,17 +14,17 @@ async function main() {
   });
 
   await prisma.user.upsert({
-    where: { loginId: 'admin' }, update: {},
+    where: { loginId: 'admin' }, update: { passwordHash: await hash('Admin@123'), isActive: true },
     create: { loginId: 'admin', name: 'College Admin', role: 'ADMIN', passwordHash: await hash('Admin@123') },
   });
 
   await prisma.user.upsert({
-    where: { loginId: 'guard1' }, update: {},
+    where: { loginId: 'guard1' }, update: { passwordHash: await hash('Guard@123'), isActive: true },
     create: { loginId: 'guard1', name: 'Gate Guard', role: 'GUARD', passwordHash: await hash('Guard@123') },
   });
 
   const mentorUser = await prisma.user.upsert({
-    where: { loginId: 'mentor1' }, update: {},
+    where: { loginId: 'mentor1' }, update: { passwordHash: await hash('Mentor@123'), isActive: true },
     create: {
       loginId: 'mentor1', name: 'Dr. Demo Mentor', role: 'MENTOR', mobile: '9000000001',
       passwordHash: await hash('Mentor@123'),
@@ -34,7 +34,7 @@ async function main() {
   });
 
   const studentUser = await prisma.user.upsert({
-    where: { loginId: 'A12345' }, update: {},
+    where: { loginId: 'A12345' }, update: { passwordHash: await hash('Student@123'), isActive: true },
     create: {
       loginId: 'A12345', name: 'Demo Student', role: 'STUDENT', mobile: '9000000002',
       passwordHash: await hash('Student@123'),
