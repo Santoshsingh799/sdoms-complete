@@ -2,6 +2,7 @@ services:
   - type: web
     name: sdoms-backend
     runtime: docker
+    plan: free
     dockerfilePath: ./backend/Dockerfile
     healthCheckPath: /api/health
     envVars:
