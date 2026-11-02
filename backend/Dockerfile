@@ -4,7 +4,8 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 COPY prisma ./prisma
 COPY src ./src
+COPY start.js ./start.js
 RUN npx prisma generate
 ENV NODE_ENV=production
 EXPOSE 5000
-CMD ["npm", "start"]
+CMD ["node", "start.js"]
