@@ -18,7 +18,7 @@ services:
       - key: CLIENT_URL
         sync: false
       - key: SMS_PROVIDER
-        value: dev
+        value: web
       - key: VAPID_PUBLIC_KEY
         sync: false
       - key: VAPID_PRIVATE_KEY

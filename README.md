@@ -13,9 +13,9 @@ createdb sdoms
 cd backend
 cp .env.example .env          # edit DATABASE_URL, JWT_SECRET, QR_SIGNING_SECRET
 npm install
-npx prisma generate
+npm run db:generate
 npx prisma migrate dev --name init
-npm run db:seed
+SEED_DEMO_DATA=true npm run db:seed
 npm run dev                   # http://localhost:5000
 
 # 3. frontend (new terminal)
@@ -24,10 +24,10 @@ npm install
 npm run dev                   # http://localhost:5173
 ```
 
-In development `SMS_PROVIDER=dev`: SMS is printed in the backend console, e.g.
-`.../g/<token>` - open that link in a browser to act as the guardian.
+In development, `SMS_PROVIDER=dev` queues simulated notifications without logging approval URLs.
+Use the guardian dashboard for approval, or configure a real SMS provider.
 
-## Demo logins (change before deployment)
+## Demo logins (local development only)
 | Role | ID | Password |
 |---|---|---|
 | Admin | admin | Admin@123 |
@@ -36,6 +36,8 @@ In development `SMS_PROVIDER=dev`: SMS is printed in the backend console, e.g.
 | Student | A12345 | Student@123 |
 
 The seeded guardian "Demo Father" (9000000003) is already verified.
+Production startup never seeds or resets these accounts. Create production accounts through
+the admin provisioning process and change all local demo passwords before deployment.
 
 ## Flow
 Student login -> request (1-5 verified guardians) -> SMS link to all -> FIRST guardian answer is final
@@ -60,7 +62,7 @@ Set `CLIENT_URL` to your public site URL (the SMS link uses it) - `localhost` li
 The approval flow uses a web page instead of WhatsApp. The normal workflow is:
 
 1. Student submits an outpass for an admin-verified guardian.
-2. The backend prints a private guardian web link in the terminal during local development. Open that link on the guardian's phone to see the request details and approve/reject it.
+2. In local development, the dashboard and push notification provide the approval path. Configure MSG91 or Twilio for SMS links; approval URLs are never written to production logs.
 3. The first guardian response closes the other links and notifies the assigned mentor.
 4. The mentor reviews the request in the mentor web dashboard and approves or rejects it.
 5. Approval creates the signed QR pass; a guard verifies it from the guard web dashboard.
@@ -68,7 +70,7 @@ The approval flow uses a web page instead of WhatsApp. The normal workflow is:
 Generate Web Push keys with `npx web-push generate-vapid-keys`, then set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT`. Users can enable notifications from their dashboard. PWA push requires HTTPS in production; an Azure HTTPS URL is sufficient.
 
 ## Free-stack deployment
-`render.yaml`, `backend/Dockerfile`, and `frontend/vercel.json` are included for a low-cost test deployment. Create a free PostgreSQL database on Neon, deploy `backend` to Render using the blueprint, then deploy `frontend` to Vercel with `VITE_API_URL=https://<render-backend>/api`. Set the backend `CLIENT_URL` to the Vercel URL. Free providers may sleep, impose quotas, or change pricing; do not use this setup for sensitive production data without a security review.
+`render.yaml`, `backend/Dockerfile`, and `frontend/vercel.json` are included for a low-cost test deployment. Create a free PostgreSQL database on Neon, deploy `backend` to Render using the blueprint, then deploy `frontend` to Vercel with `VITE_API_URL=https://<render-backend>/api`. Set the backend `CLIENT_URL` to the Vercel URL. Production requires `SMS_PROVIDER=web`, `msg91`, or `twilio`; `dev` is rejected. Free providers may sleep, impose quotas, or change pricing; do not use this setup for sensitive production data without a security review.
 
 ## Tests
 With the server running on a fresh seeded DB: `node backend/test/e2e.mjs` (47 checks).

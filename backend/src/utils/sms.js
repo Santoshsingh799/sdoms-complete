@@ -3,8 +3,9 @@ import { env } from '../config/env.js';
 import { sendPush } from './push.js';
 
 async function send(mobile, message) {
+  if (env.smsProvider === 'web') return 'WEB_ONLY';
   if (env.smsProvider === 'dev') {
-    console.log(`\n[SIMULATED SMS -> ${mobile}]\n${message}\n`);
+    console.log(`[SIMULATED SMS] notification queued for ${mobile}`);
     return 'SIMULATED';
   }
   if (env.smsProvider === 'msg91') {
@@ -37,7 +38,7 @@ export async function notify({ requestId = null, mobile, event, message, link = 
   if (!mobile && !link) return;
   let status = 'FAILED';
   if (env.smsProvider === 'dev') {
-    console.log(`\n[WEB APPROVAL LINK${mobile ? ` FOR ${mobile}` : ''}]\n${message}\n${link || ''}\n`);
+    console.log(`[SIMULATED APPROVAL] notification queued for ${mobile || 'web user'}`);
     status = 'SIMULATED';
   } else {
     try { status = await send(mobile, message); } catch (e) { console.error('SMS failed:', e.message); }
