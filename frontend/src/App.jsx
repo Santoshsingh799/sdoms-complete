@@ -6,16 +6,18 @@ import Login from './pages/Login.jsx';
 import GuardianLink from './pages/GuardianLink.jsx';
 import { StudentHome, NewRequest, MyGuardians } from './pages/Student.jsx';
 import Mentor from './pages/Mentor.jsx';
+import Guardian from './pages/Guardian.jsx';
 import Guard from './pages/Guard.jsx';
 import Admin from './pages/Admin.jsx';
 
 const NAV = {
   STUDENT: [['/student', 'My Outpasses'], ['/student/new', 'New Request'], ['/student/guardians', 'My Guardians']],
+  GUARDIAN: [['/guardian', 'Approvals']],
   MENTOR: [['/mentor', 'Requests']],
   GUARD: [['/guard', 'Gate Scanner']],
   ADMIN: [['/admin', 'Admin Dashboard']],
 };
-const HOME = { STUDENT: '/student', MENTOR: '/mentor', GUARD: '/guard', ADMIN: '/admin' };
+const HOME = { STUDENT: '/student', GUARDIAN: '/guardian', MENTOR: '/mentor', GUARD: '/guard', ADMIN: '/admin' };
 
 function Shell({ role, children }) {
   const { user, logout } = useAuth();
@@ -57,6 +59,7 @@ export default function App() {
       <Route path="/login" element={user ? <Navigate to={HOME[user.role]} replace /> : <Login />} />
       <Route path="/g/:token" element={<GuardianLink />} />
       <Route path="/student" element={<Shell role="STUDENT"><StudentHome /></Shell>} />
+      <Route path="/guardian" element={<Shell role="GUARDIAN"><Guardian /></Shell>} />
       <Route path="/student/new" element={<Shell role="STUDENT"><NewRequest /></Shell>} />
       <Route path="/student/guardians" element={<Shell role="STUDENT"><MyGuardians /></Shell>} />
       <Route path="/mentor" element={<Shell role="MENTOR"><Mentor /></Shell>} />

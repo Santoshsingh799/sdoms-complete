@@ -52,6 +52,12 @@ async function main() {
     where: { mobile: '9000000003' }, update: {},
     create: { name: 'Demo Father', mobile: '9000000003' },
   });
+  const guardianUser = await prisma.user.upsert({
+    where: { loginId: 'guardian1' },
+    update: { passwordHash: await hash('Guardian@123'), isActive: true, name: guardian.name, role: 'GUARDIAN' },
+    create: { loginId: 'guardian1', name: guardian.name, role: 'GUARDIAN', mobile: guardian.mobile, passwordHash: await hash('Guardian@123') },
+  });
+  await prisma.guardian.update({ where: { id: guardian.id }, data: { userId: guardianUser.id } });
   await prisma.studentGuardian.upsert({
     where: { studentId_guardianId: { studentId: studentUser.student.id, guardianId: guardian.id } },
     update: {},

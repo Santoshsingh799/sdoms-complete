@@ -23,7 +23,7 @@ export default function Login() {
         <Input label="Enrollment No. / Employee ID" value={f.loginId} onChange={(e) => setF({ ...f, loginId: e.target.value })} required />
         <Input label="Password" type="password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} required />
         <Btn className="w-full" disabled={busy}>{busy ? 'Signing in...' : 'Sign in'}</Btn>
-        <p className="text-xs text-slate-400 text-center">Parents/guardians do not need to log in. Use the link sent by SMS.</p>
+        <p className="text-xs text-slate-400 text-center">Students, guardians, mentors and guards use this same login page.</p>
       </form>
     </div>
   );

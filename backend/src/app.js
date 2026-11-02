@@ -7,6 +7,7 @@ import { env } from './config/env.js';
 import authRoutes from './routes/auth.js';
 import outpassRoutes from './routes/outpass.js';
 import guardianLinkRoutes from './routes/guardianLink.js';
+import guardianRoutes from './routes/guardian.js';
 import mentorRoutes from './routes/mentor.js';
 import guardRoutes from './routes/guard.js';
 import adminRoutes from './routes/admin.js';
@@ -26,6 +27,7 @@ app.get('/api/public/college', async (_req, res) => res.json({ name: await colle
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/outpass', outpassRoutes);
 app.use('/api/g', guardianLinkRoutes);
+app.use('/api/guardian', guardianRoutes);
 app.use('/api/mentor', mentorRoutes);
 app.use('/api/guard', guardRoutes);
 app.use('/api/admin', adminRoutes);
