@@ -3,7 +3,7 @@ import { env } from '../config/env.js';
 import { sendPush } from './push.js';
 
 async function send(mobile, message) {
-  if (env.smsProvider === 'web') return 'WEB_ONLY';
+  if (env.smsProvider === 'web') return 'SIMULATED';
   if (env.smsProvider === 'dev') {
     console.log(`[SIMULATED SMS] notification queued for ${mobile}`);
     return 'SIMULATED';

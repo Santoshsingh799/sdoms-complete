@@ -107,7 +107,7 @@ export const Card = ({ title, children, className = '', right }) => (
 );
 export const Btn = ({ color = 'blue', className = '', ...p }) => {
   const c = { blue: 'bg-blue-600 hover:bg-blue-700', green: 'bg-emerald-600 hover:bg-emerald-700', red: 'bg-rose-600 hover:bg-rose-700', gray: 'bg-slate-600 hover:bg-slate-700' }[color];
-  return <button {...p} className={`rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50 ${c} ${className}`} />;
+  return <button {...p} className={`rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-50 ${c} ${className}`} />;
 };
 export const Input = ({ label, ...p }) => (
   <label className="block text-sm"><span className="text-slate-600">{label}</span>

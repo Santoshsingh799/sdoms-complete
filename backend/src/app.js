@@ -21,7 +21,10 @@ app.use(cors({ origin: env.clientUrl }));
 app.use(express.json({ limit: '100kb' }));
 app.use(rateLimit({ windowMs: 60 * 1000, max: 200 }));
 
-app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'SDOMS' }));
+app.get('/api/health', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ ok: true, service: 'SDOMS' });
+});
 app.use('/api/auth', authRoutes);
 app.get('/api/public/college', async (_req, res) => res.json({ name: await collegeName() }));
 app.use('/api/notifications', notificationRoutes);

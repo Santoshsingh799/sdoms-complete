@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { api, errMsg, fmt, Badge, Btn, Card, Spinner, useFetch, useToast } from '../lib.jsx';
 
 export default function Guardian() {
   const { data, loading, reload } = useFetch('/guardian/requests');
   const toast = useToast();
+  const [busy, setBusy] = useState(null);
   const decide = async (id, decision) => {
+    if (busy) return;
+    setBusy(id);
     try { await api.post(`/guardian/requests/${id}/decision`, { decision }); toast(decision === 'APPROVE' ? 'Approved' : 'Rejected'); reload(); }
     catch (e) { toast(errMsg(e), 'err'); reload(); }
+    finally { setBusy(null); }
   };
   if (loading) return <Spinner />;
   return <div className="space-y-4">
@@ -17,7 +21,7 @@ export default function Guardian() {
           <div><b>Destination:</b> {r.destination}</div><div><b>Reason:</b> {r.reason}</div>
           <div><b>Leaving:</b> {fmt(r.leaveTime)}</div><div><b>Returning:</b> {fmt(r.returnTime)}</div>
         </div>
-        {r.status === 'PENDING_GUARDIAN' && r.guardianDecision === 'PENDING' && <div className="mt-4 flex gap-2"><Btn color="red" onClick={() => decide(r.guardianApprovalId, 'REJECT')}>Reject</Btn><Btn color="green" onClick={() => decide(r.guardianApprovalId, 'APPROVE')}>Approve</Btn></div>}
+        {r.status === 'PENDING_GUARDIAN' && r.guardianDecision === 'PENDING' && <div className="mt-4 flex gap-2"><Btn color="red" disabled={busy === r.guardianApprovalId} onClick={() => decide(r.guardianApprovalId, 'REJECT')}>{busy === r.guardianApprovalId ? 'Please wait...' : 'Reject'}</Btn><Btn color="green" disabled={busy === r.guardianApprovalId} onClick={() => decide(r.guardianApprovalId, 'APPROVE')}>{busy === r.guardianApprovalId ? 'Please wait...' : 'Approve'}</Btn></div>}
       </Card>
     ))}
   </div>;

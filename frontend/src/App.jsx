@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom';
 import { LogOut, ShieldCheck } from 'lucide-react';
-import { enablePush, useAuth, useFetch, useToast } from './lib.jsx';
+import { api, enablePush, useAuth, useFetch, useToast } from './lib.jsx';
 import Login from './pages/Login.jsx';
 import GuardianLink from './pages/GuardianLink.jsx';
 import { StudentHome, NewRequest, MyGuardians } from './pages/Student.jsx';
@@ -54,6 +54,23 @@ function Shell({ role, children }) {
 
 export default function App() {
   const { user } = useAuth();
+
+  useEffect(() => {
+    const keepAlive = () => {
+      api.get('/health', { timeout: 10000, headers: { 'Cache-Control': 'no-cache' } })
+        .catch((error) => console.warn('Backend keep-alive request failed:', error.message));
+    };
+
+    keepAlive();
+    const timer = window.setInterval(keepAlive, 15 * 60 * 1000);
+    window.addEventListener('online', keepAlive);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('online', keepAlive);
+    };
+  }, []);
+
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to={HOME[user.role]} replace /> : <Login />} />

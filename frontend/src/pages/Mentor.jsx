@@ -6,9 +6,13 @@ export default function Mentor() {
   const { data, loading, reload } = useFetch(`/mentor/requests?status=${tab === 'pending' ? 'pending' : 'all'}`, [tab]);
   const toast = useToast();
   const [remark, setRemark] = useState({});
+  const [busy, setBusy] = useState(null);
   const decide = async (id, decision) => {
+    if (busy) return;
+    setBusy(id);
     try { await api.post(`/mentor/requests/${id}/decision`, { decision, remark: remark[id] || undefined }); toast(decision === 'APPROVE' ? 'Approved. Pass generated.' : 'Rejected'); reload(); }
     catch (e) { toast(errMsg(e), 'err'); reload(); }
+    finally { setBusy(null); }
   };
   return (
     <div className="space-y-4">
@@ -26,7 +30,7 @@ export default function Mentor() {
           {r.status === 'PENDING_MENTOR' && (
             <div className="mt-3 flex flex-wrap gap-2">
               <input placeholder="Optional remark" value={remark[r.id] || ''} onChange={(e) => setRemark({ ...remark, [r.id]: e.target.value })} className="flex-1 min-w-40 rounded-lg border px-3 py-2 text-sm" />
-              <Btn color="green" onClick={() => decide(r.id, 'APPROVE')}>Approve</Btn><Btn color="red" onClick={() => decide(r.id, 'REJECT')}>Reject</Btn>
+              <Btn color="green" disabled={busy === r.id} onClick={() => decide(r.id, 'APPROVE')}>{busy === r.id ? 'Please wait...' : 'Approve'}</Btn><Btn color="red" disabled={busy === r.id} onClick={() => decide(r.id, 'REJECT')}>{busy === r.id ? 'Please wait...' : 'Reject'}</Btn>
             </div>
           )}
         </Card>
